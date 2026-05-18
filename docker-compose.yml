@@ -39,6 +39,7 @@ services:
       - venv_data:/app/.venv
     ports:
       - "9095:8000"
+      - "8888:8888"
     networks:
       - local_network
     environment:
