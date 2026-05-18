@@ -4,5 +4,5 @@ db.sqlite3
 .venv
 /.docker/mysql/data
 /.docker/mongo/data
-/.vscode
+/.docker/redis/data
 /storage/tistory/browser_context.json
