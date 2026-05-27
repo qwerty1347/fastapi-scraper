@@ -39,11 +39,43 @@ services:
       - venv_data:/app/.venv
     ports:
       - "9095:8000"
+      - "8888:8888"
     networks:
       - local_network
     environment:
+      SERVICE_TYPE: app
       DB_HOST: fastapi_tistory-mysql
       MONGO_DB_HOST: fastapi_tistory-mongodb
+      REDIS_URL: redis://fastapi_tistory-redis:6379/0
+
+  redis:
+    image: redis:7-alpine
+    container_name: fastapi_tistory-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - ./.docker/redis/data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - local_network
+
+  worker:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile
+    container_name: fastapi_tistory-worker
+    volumes:
+      - ./:/app
+      - venv_data:/app/.venv
+    networks:
+      - local_network
+    environment:
+      SERVICE_TYPE: worker
+      DB_HOST: fastapi_tistory-mysql
+      MONGO_DB_HOST: fastapi_tistory-mongodb
+      REDIS_URL: redis://fastapi_tistory-redis:6379/0
+    depends_on:
+      - redis
 
 volumes:
     venv_data:
