@@ -536,7 +536,7 @@ requires-dist = [
     { name = "python-multipart" },
     { name = "redis", specifier = "==7.4.0" },
     { name = "sqlalchemy", specifier = "==2.0.47" },
-    { name = "uvicorn", extras = ["standard"] },
+    { name = "uvicorn", extras = ["standard"], specifier = "==0.41.0" },
 ]
 
 [[package]]
