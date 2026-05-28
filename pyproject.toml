@@ -4,7 +4,7 @@
 # 버전 미지정 항목(notebook 등)은 lock에 처음 박제된 시점의 버전이 그대로 유지됨.
 
 [project]
-name = "fastapi-tistory"
+name = "fastapi-scraper"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [

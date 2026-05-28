@@ -1,4 +1,4 @@
-# fastapi-tistory 작업 절차 (개요)
+# fastapi-scraper 작업 절차 (개요)
 
 스크래핑 → LLM 글 생성 → Tistory 자동 발행 파이프라인의 단계별 개요입니다.
 (각 단계 상세 문서는 별도 작성 예정)

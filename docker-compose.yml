@@ -1,7 +1,7 @@
 services:
   mysql:
     image: mysql:8.0
-    container_name: fastapi_tistory-mysql
+    container_name: fastapi_scraper-mysql
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     volumes:
       - ./.docker/mysql/data:/var/lib/mysql
@@ -18,7 +18,7 @@ services:
 
   mongo:
     image: mongo:latest
-    container_name: fastapi_tistory-mongodb
+    container_name: fastapi_scraper-mongodb
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin
@@ -33,7 +33,7 @@ services:
     build:
       context: .
       dockerfile: .docker/Dockerfile
-    container_name: fastapi_tistory
+    container_name: fastapi_scraper
     volumes:
       - ./:/app
       - venv_data:/app/.venv
@@ -44,13 +44,13 @@ services:
       - local_network
     environment:
       SERVICE_TYPE: app
-      DB_HOST: fastapi_tistory-mysql
-      MONGO_DB_HOST: fastapi_tistory-mongodb
-      REDIS_URL: redis://fastapi_tistory-redis:6379/0
+      DB_HOST: fastapi_scraper-mysql
+      MONGO_DB_HOST: fastapi_scraper-mongodb
+      REDIS_URL: redis://fastapi_scraper-redis:6379/0
 
   redis:
     image: redis:7-alpine
-    container_name: fastapi_tistory-redis
+    container_name: fastapi_scraper-redis
     command: redis-server --appendonly yes
     volumes:
       - ./.docker/redis/data:/data
@@ -63,7 +63,7 @@ services:
     build:
       context: .
       dockerfile: .docker/Dockerfile
-    container_name: fastapi_tistory-worker
+    container_name: fastapi_scraper-worker
     volumes:
       - ./:/app
       - venv_data:/app/.venv
@@ -71,9 +71,9 @@ services:
       - local_network
     environment:
       SERVICE_TYPE: worker
-      DB_HOST: fastapi_tistory-mysql
-      MONGO_DB_HOST: fastapi_tistory-mongodb
-      REDIS_URL: redis://fastapi_tistory-redis:6379/0
+      DB_HOST: fastapi_scraper-mysql
+      MONGO_DB_HOST: fastapi_scraper-mongodb
+      REDIS_URL: redis://fastapi_scraper-redis:6379/0
     depends_on:
       - redis
 
