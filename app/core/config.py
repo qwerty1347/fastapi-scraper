@@ -13,5 +13,6 @@ class Config(BaseSettings):
 
 config = Config()
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 STORAGE_PATH = BASE_DIR / config.STORAGE_PATH
+TISTORY_STORAGE = STORAGE_PATH / "tistory"

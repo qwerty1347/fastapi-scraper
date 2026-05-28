@@ -1,63 +1,63 @@
 import asyncio
-import logging
 
-from pathlib import Path
 from playwright.async_api import BrowserContext, Page
 
-from app.services.tistory.browser import TistoryBrowserService
+from app.core.config import TISTORY_STORAGE
+from app.core.utils.error import exception_format
+from app.modules.browser.playwright import PlaywrightManager
 
-
-logger = logging.getLogger(__name__)
 
 class TistoryPostService:
-    def __init__(self, tistory_browser_service: TistoryBrowserService, tistory_context: Path):
-        self.tistory_browser_service: TistoryBrowserService = tistory_browser_service
-        self.tistory_context: Path = tistory_context
+    def __init__(self, playwright_manager: PlaywrightManager):
+        self.pm = playwright_manager
+        self.context: BrowserContext | None = None
+        self.page: Page | None = None
+        self.post_page: Page | None = None
+
+
+    async def do_login(self):
+        await self.pm.start(headless=False)
+        tistory_context = str(TISTORY_STORAGE / "browser_context.json")
+        self.context = await self.pm.create_context(storage_state=tistory_context)
+        self.page = await self.context.new_page()
+        await self.page.goto("https://www.tistory.com", wait_until="domcontentloaded")
+
+
+    async def click_post_page(self):
+        self.page.once('dialog', lambda dialog: asyncio.create_task(dialog.dismiss()))
+        async with self.context.expect_page() as new_page_info:
+            await self.page.get_by_role('link', name='글쓰기').click()
+        self.post_page = await new_page_info.value
+
+
+    async def write_posting(self):
+        await self.post_page.locator('#post-title-inp').type('제목입니당...', delay=30)
+        await self.post_page.wait_for_selector('#editor-tistory_ifr')
+        editor_iframe = self.post_page.frame_locator('#editor-tistory_ifr')
+        await editor_iframe.locator('#tinymce').type('본문 내용 입니당...', delay=30)
+        await self.post_page.get_by_role('button', name='완료').click()
+
+
+    async def publish_posting(self):
+        # 기본
+        await self.post_page.locator('input[name="basicSet"][value="20"]').check()
+        # 발행일
+        await self.post_page.get_by_role('button', name='현재').click()
+        # 공개발행
+        await self.post_page.get_by_role('button', name='공개 발행').click()
 
 
     async def do_post(self):
-        context = await self.set_context()
-        page = await self.open_main_page(context)
-        new_page = await self.open_post_page(context, page)
-        await self.write_post(new_page)
-        await self.publish_post(new_page)
-        await self.tistory_browser_service.close_browser()
+        try:
+            await self.do_login()
+            await self.click_post_page()
+            await self.write_posting()
+            await self.publish_posting()
 
 
-    async def set_context(self) -> BrowserContext:
-        logger.info('set context')
-        await self.tistory_browser_service.init_browser(headless=True)
-        return await self.tistory_browser_service.load_context(self.tistory_context)
+        except Exception as e:
+            print(exception_format(e))
 
-
-    async def open_main_page(self, context: BrowserContext) -> Page:
-        logger.info('open main page')
-        page = await context.new_page()
-        await page.goto("https://www.tistory.com", wait_until="domcontentloaded")
-        page.once('dialog', lambda dialog: asyncio.create_task(dialog.dismiss()))
-
-        return page
-
-
-    async def open_post_page(self, context: BrowserContext, page: Page) -> Page:
-        logger.info('open post page')
-        async with context.expect_page() as new_page_info:
-            await page.get_by_role('link', name='글쓰기').click()
-        post_page = await new_page_info.value
-
-        return post_page
-
-
-    async def write_post(self, page: Page):
-        logger.info('write post')
-        await page.locator('#post-title-inp').type('제목입니당...', delay=30)
-        frame = page.frame_locator('#editor-tistory_ifr')
-        await frame.locator('#tinymce').type('본문 내용 입니당...', delay=30)
-
-
-    async def publish_post(self, page: Page):
-        logger.info('publish post')
-        await page.get_by_role('button', name='완료').click()
-        await page.locator('input[name="basicSet"][value="20"]').check()
-        await page.get_by_role('button', name='현재').click()
-        await page.get_by_role('button', name='공개 발행').click()
+        finally:
+            # self.post_page.pause()
+            await self.pm.close()

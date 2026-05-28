@@ -1,15 +1,15 @@
 import logging
 import time
 
-from pathlib import Path
 from playwright.async_api import BrowserContext, Page
 
-from app.core.config import config
+from app.core.config import TISTORY_STORAGE
+from app.core.utils.error import exception_format
 from app.core.utils.file import ensure_directory
 from app.modules.browser.playwright import PlaywrightManager
 
 
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 
 class TistoryLoginService:
@@ -18,15 +18,15 @@ class TistoryLoginService:
     """
 
     def __init__(self, playwright_manager: PlaywrightManager):
-        self.pw = playwright_manager
+        self.pm = playwright_manager
         self.context: BrowserContext | None = None
         self.page: Page | None = None
 
 
     async def open_login_page(self) -> Page:
         """브라우저를 띄우고 티스토리 메인 페이지를 연다."""
-        await self.pw.start(headless=False)
-        self.context = await self.pw.create_context()
+        await self.pm.start(headless=False)
+        self.context = await self.pm.create_context()
         self.page = await self.context.new_page()
         await self.page.goto("https://www.tistory.com", wait_until="domcontentloaded")
         return self.page
@@ -40,9 +40,8 @@ class TistoryLoginService:
 
     async def save_session(self):
         """현재 컨텍스트의 쿠키·로컬스토리지를 JSON 파일로 저장"""
-        tistory_storage = Path(config.STORAGE_PATH) / "tistory"
-        ensure_directory(tistory_storage)
-        tistory_context = tistory_storage / "browser_context.json"
+        ensure_directory(TISTORY_STORAGE)
+        tistory_context = TISTORY_STORAGE / "browser_context.json"
         await self.context.storage_state(path=tistory_context)
 
 
@@ -84,8 +83,9 @@ class TistoryLoginService:
             print("done")
 
         except Exception as e:
-            print(f"error: {type(e).__name__}: {e}")
+            print(exception_format(e))
             print(f"최종 url = {self.page.url if self.page else 'no page'}")
 
         finally:
-            await self.pw.close()
+            # await self.page.pause()
+            await self.pm.close()
