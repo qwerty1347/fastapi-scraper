@@ -9,6 +9,7 @@ class Config(BaseSettings):
     )
 
     STORAGE_PATH: str
+    GROQ_API_KEY: str
 
 
 config = Config()
