@@ -8,7 +8,7 @@ from app.modules.browser.playwright import PlaywrightManager
 
 FINANCE_NEWS_URL = 'https://finance.naver.com/news/news_list.naver?mode=RANK'
 
-class FinanceNewsService:
+class FinanceNewsScraperService:
     def __init__(self, playwright_manager: PlaywrightManager):
         self.pm = playwright_manager
         self.page: Page | None = None
