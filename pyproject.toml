@@ -4,7 +4,7 @@
 # 버전 미지정 항목(notebook 등)은 lock에 처음 박제된 시점의 버전이 그대로 유지됨.
 
 [project]
-name = "fastapi-tistory"
+name = "fastapi-scraper"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
@@ -39,6 +39,8 @@ dependencies = [
     "pymysql==1.1.2",                   # MySQL 동기 드라이버
     "aiomysql==0.3.2",                  # MySQL 비동기 드라이버
     "alembic==1.18.4",                  # DB 마이그레이션 도구
+
+    "groq",
 
     # Dev utils
     "python-dotenv",                    # .env 파일 로더

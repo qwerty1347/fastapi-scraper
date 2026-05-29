@@ -7,12 +7,31 @@ from app.core.utils.error import exception_format
 from app.modules.browser.playwright import PlaywrightManager
 
 
-class TistoryPostService:
+class TistoryNewsPostService:
     def __init__(self, playwright_manager: PlaywrightManager):
         self.pm = playwright_manager
         self.context: BrowserContext | None = None
         self.page: Page | None = None
         self.post_page: Page | None = None
+
+        """
+        todo: 글쓰기
+        ✅1 context 불러와 로그인
+        ✅2 티스토리 페이지 이동
+        ✅3 글쓰기 버튼 클릭
+        ✅4 글쓰기 시작
+        ✅5 발행
+        6 브라우저 종료
+
+        todo: 스크래핑
+        ✅1 스크래핑 사이트 접속
+        ✅2 스크래핑
+        ✅3 스크래핑 아티클 가공
+
+        todo: LLM
+        ✅1 스크래핑 아티클 llm 요청
+        2 llm 응답 글쓰기 내용에 연동
+        """
 
 
     async def do_login(self):
@@ -52,6 +71,11 @@ class TistoryPostService:
         try:
             await self.do_login()
             await self.click_post_page()
+
+
+            # todo: 여기 LLM
+
+
             await self.write_posting()
             await self.publish_posting()
 
