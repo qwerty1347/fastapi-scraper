@@ -14,6 +14,25 @@ class TistoryPostService:
         self.page: Page | None = None
         self.post_page: Page | None = None
 
+        """
+        todo: 글쓰기
+        ✅1 context 불러와 로그인
+        ✅2 티스토리 페이지 이동
+        ✅3 글쓰기 버튼 클릭
+        ✅4 글쓰기 시작
+        ✅5 발행
+        6 브라우저 종료
+
+        todo: 스크래핑
+        ✅1 스크래핑 사이트 접속
+        ✅2 스크래핑
+        ✅3 스크래핑 텍스트 가공
+
+        todo: LLM
+        1 스크래핑 텍스트를 통해 llm 요청
+        2 글쓰기 내용에 연동
+        """
+
 
     async def do_login(self):
         await self.pm.start(headless=False)
@@ -37,14 +56,15 @@ class TistoryPostService:
         await editor_iframe.locator('#tinymce').type('본문 내용 입니당...', delay=30)
         await self.post_page.get_by_role('button', name='완료').click()
 
+        # todo: 태그 추가
+
 
     async def publish_posting(self):
-        # 기본
-        await self.post_page.locator('input[name="basicSet"][value="20"]').check()
-        # 발행일
-        await self.post_page.get_by_role('button', name='현재').click()
-        # 공개발행
-        await self.post_page.get_by_role('button', name='공개 발행').click()
+        await self.post_page.locator('input[name="basicSet"][value="20"]').check()  # 기본
+        await self.post_page.get_by_role('button', name='현재').click()  # 발행일
+        await self.post_page.get_by_role('button', name='공개 발행').click()  # 공개발행
+
+        # todo: 홈주제 추가
 
 
     async def do_post(self):
@@ -53,7 +73,6 @@ class TistoryPostService:
             await self.click_post_page()
             await self.write_posting()
             await self.publish_posting()
-
 
         except Exception as e:
             print(exception_format(e))
