@@ -49,7 +49,7 @@ class FinanceNewsScraperService:
     async def do_scraping(self):
         try:
             await self.open_finance_news_page()
-            print("* 아티클 스크래핑 *")
+            print("* 아티클 스크래핑")
             picked_newslist = await self.scrap_newslist()
 
             articles = []
