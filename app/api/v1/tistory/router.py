@@ -1,13 +1,12 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from app.core.dependencies.tistory import get_tistory_post_service
+from app.core.log import logger
 from app.core.utils.response import success_response
 from app.schemas.common import BaseResponse
-from app.services.tistory.origin_post import TistoryPostService
 
 
-router = APIRouter(prefix="/tistory", tags=["tistory"])
+router = APIRouter(prefix="/scraper", tags=["scraper"])
 
 @router.get('/', response_model=BaseResponse[dict])
 def index() -> JSONResponse:

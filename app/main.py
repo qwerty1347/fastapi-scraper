@@ -3,7 +3,7 @@ from fastapi import FastAPI
 
 from app.api import api_router
 from app.core.exceptions.handlers import add_exception_handlers
-from app.core.logging import setup_logging
+from app.core.log import setup_logging
 
 
 @asynccontextmanager

@@ -1,15 +1,12 @@
-import logging
 import time
 
 from playwright.async_api import BrowserContext, Page
 
 from app.core.config import TISTORY_STORAGE
+from app.core.log import logger
 from app.core.utils.error import exception_format
 from app.core.utils.file import ensure_directory
 from app.modules.browser.playwright import PlaywrightManager
-
-
-logger: logging.Logger = logging.getLogger(__name__)
 
 
 class TistoryLoginService:

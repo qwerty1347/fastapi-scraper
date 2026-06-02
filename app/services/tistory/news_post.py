@@ -1,15 +1,13 @@
 import asyncio
-import logging
 import random
 
 from playwright.async_api import BrowserContext, Page
 
 from app.core.config import TISTORY_STORAGE
+from app.core.log import logger
 from app.core.utils.error import exception_format
 from app.modules.browser.playwright import PlaywrightManager
 
-
-logger = logging.getLogger(__name__)
 
 class TistoryNewsPostService:
     def __init__(self, playwright_manager: PlaywrightManager):
@@ -132,12 +130,11 @@ class TistoryNewsPostService:
             await self.do_login()
 
             for article in summarized_article:
-                print("* 글쓰기 버튼 클릭 *")
                 await self.click_post_page()
-                print("* 글쓰기 *")
+                print("* 글쓰기")
                 await self.write_posting(article)
-                print("* 글발행 *")
-                await self.publish_posting()
+                print("* 글발행")
+                # await self.publish_posting()
                 await asyncio.sleep(random.uniform(4, 8))
 
         except Exception as e:
