@@ -3,6 +3,7 @@ import random
 from playwright.async_api import Locator, Page
 
 from app.core.utils.error import exception_format
+from app.core.utils.log import save_log
 from app.modules.browser.playwright import PlaywrightManager
 
 
@@ -55,6 +56,8 @@ class FinanceNewsScraperService:
             articles = []
             for news in picked_newslist:
                 article_page = await self.click_article(news)
+                await article_page.wait_for_load_state('domcontentloaded')
+                save_log(article_page.url, 'tistory/finance_news')
                 article = await self.scrap_article(article_page)
                 articles.append(article)
                 await article_page.close()
