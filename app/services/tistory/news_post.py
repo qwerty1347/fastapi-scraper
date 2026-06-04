@@ -10,25 +10,24 @@ from app.modules.browser.playwright import PlaywrightManager
 
 
 class TistoryNewsPostService:
+    """
+    * 글쓰기
+    ✅1 context 불러와 로그인
+    ✅2 티스토리 페이지 이동
+    ✅3 글쓰기 버튼 클릭
+    ✅4 글쓰기 시작
+    ✅5 발행
+    ✅6 브라우저 종료
+
+    * LLM
+    ✅1 스크래핑된 아티클 llm 요청
+    ✅2 llm 응답 글쓰기 내용에 연동
+    """
     def __init__(self, playwright_manager: PlaywrightManager):
         self.pm = playwright_manager
         self.context: BrowserContext | None = None
         self.page: Page | None = None
         self.post_page: Page | None = None
-
-        """
-        * 글쓰기
-        ✅1 context 불러와 로그인
-        ✅2 티스토리 페이지 이동
-        ✅3 글쓰기 버튼 클릭
-        ✅4 글쓰기 시작
-        ✅5 발행
-        ✅6 브라우저 종료
-
-        * LLM
-        ✅1 스크래핑된 아티클 llm 요청
-        ✅2 llm 응답 글쓰기 내용에 연동
-        """
 
 
     async def do_login(self):
@@ -50,6 +49,21 @@ class TistoryNewsPostService:
             asyncio.create_task(dialog.dismiss())
         else:
             asyncio.create_task(dialog.accept())
+
+
+    def handle_reservation_data(self, reservation_data: dict[str, str]) -> dict[str, str]:
+        date = reservation_data['date']
+
+        match (reservation_data['type']):
+            case ('fixed'):
+                time = reservation_data['time'].split(':')
+                hour = time[0]
+                minutes = time[1]
+            case ('random'):
+                hour = f"{random.randint(0, 12):02d}"
+                minutes = f"{random.randint(0, 59):02d}"
+
+        return {'date': date, 'hour': hour, 'minutes': minutes}
 
 
     async def click_post_page(self):
@@ -105,10 +119,7 @@ class TistoryNewsPostService:
         await self.post_page.keyboard.type(' ')
         await self.post_page.keyboard.press('Backspace')
 
-        # 4) 완료
-        await self.post_page.get_by_role('button', name='완료').click()
-
-        # 5) 태그
+        # 4) 태그
         await self.post_page.wait_for_selector('input[name="tagText"]')
         tag_text = self.post_page.locator('input[name="tagText"]')
         tags = [t.strip() for t in article['tags'].split('||') if t.strip()][:6]
@@ -116,18 +127,38 @@ class TistoryNewsPostService:
             await tag_text.fill(tag)
             await tag_text.press('Enter')
 
-        # todo: 예약 추가
+        # 5) 완료
+        await self.post_page.locator('#publish-layer-btn').click()
+
+        # todo: 카테고리 추가
 
 
-    async def publish_posting(self):
-        await self.post_page.locator('input[name="basicSet"][value="20"]').check()  # 기본
-        await self.post_page.get_by_role('button', name='현재').click()  # 발행일
+    async def publish_posting(self, reservation_data: dict[str, str] | None = None):
+        # 1) 기본 (공개)
+        await self.post_page.locator('input[name="basicSet"][value="20"]').check()
+
+        # 2) 발행일 (현재/예약)
+        if reservation_data is None:
+            await self.post_page.get_by_role('button', name='현재').click()
+        else:
+            await self.post_page.get_by_role('button', name='예약').click()
+            datetime = self.handle_reservation_data(reservation_data)
+            await self.post_page.locator('button.btn_reserve').evaluate("""
+            (btn, dateStr) => {
+                btn.textContent = dateStr;
+                btn.focus();
+            }
+            """, datetime['date'])
+            await self.post_page.locator('#dateHour').fill(datetime['hour'])
+            await self.post_page.locator('#dateMinute').fill(datetime['minutes'])
+
+        # 3) 공개 발행
         await self.post_page.get_by_role('button', name='공개 발행').click()  # 공개발행
 
-        # todo: 홈주제 추가
+        # todo: 대표이미지, 홈주제 추가
 
 
-    async def do_posting(self, summarized_article: list[dict[str, str]]):
+    async def do_posting(self, summarized_article: list[dict[str, str]], reservation_data: dict[str, str] | None = None):
         try:
             await self.do_login()
 
@@ -136,7 +167,7 @@ class TistoryNewsPostService:
                 print("* 글쓰기")
                 await self.write_posting(article)
                 print("* 글발행")
-                # await self.publish_posting()
+                await self.publish_posting(reservation_data)
                 await asyncio.sleep(random.uniform(4, 8))
 
         except Exception as e:
