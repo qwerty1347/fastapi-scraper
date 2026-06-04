@@ -17,7 +17,7 @@ def setup_logging() -> None:
 
 
 # 어디서든 import해서 쓸 수 있는 전역 logger.
-# 사용: from app.core.log import logger
+# 사용: from app.core.logger import logger
 # formatter의 %(pathname)s:%(lineno)d 가 호출된 위치를 자동으로 캡처하므로
 # 매 파일마다 getLogger(__name__) 할 필요 없음.
 logger: logging.Logger = logging.getLogger("app")

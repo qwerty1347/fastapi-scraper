@@ -4,7 +4,7 @@ import random
 from playwright.async_api import BrowserContext, Page
 
 from app.core.config import TISTORY_STORAGE
-from app.core.log import logger
+from app.core.logger import logger
 from app.core.utils.error import exception_format
 from app.modules.browser.playwright import PlaywrightManager
 
@@ -115,6 +115,8 @@ class TistoryNewsPostService:
         for tag in tags:
             await tag_text.fill(tag)
             await tag_text.press('Enter')
+
+        # todo: 예약 추가
 
 
     async def publish_posting(self):
