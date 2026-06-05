@@ -5,6 +5,7 @@ from datetime import datetime as dt
 from playwright.async_api import BrowserContext, Page
 
 from app.core.config import TISTORY_STORAGE
+from app.core.exceptions.custom import TistorySessionExpiredException
 from app.core.logger import logger
 from app.core.utils.error import exception_format
 from app.modules.browser.playwright import PlaywrightManager
@@ -61,7 +62,7 @@ class TistoryNewsPostService:
                 hour = time[0]
                 minutes = time[1]
             case ('random'):
-                hour = f"{random.randint(0, 12):02d}"
+                hour = f"{random.randint(9, 16):02d}"
                 minutes = f"{random.randint(0, 59):02d}"
 
         return {'date': date, 'hour': hour, 'minutes': minutes}
@@ -211,6 +212,9 @@ class TistoryNewsPostService:
         try:
             await self.do_login()
 
+            if await self.page.locator('a[title="글쓰기"]').count() == 0:
+                raise TistorySessionExpiredException()
+
             for article in summarized_article:
                 await self.click_post_page()
                 print("* 글쓰기")
@@ -223,5 +227,6 @@ class TistoryNewsPostService:
             print(exception_format(e))
 
         finally:
+            # await self.page.pause()
             # await self.post_page.pause()
             await self.pm.close()
