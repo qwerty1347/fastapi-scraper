@@ -37,6 +37,9 @@ FastAPI 기반 금융 뉴스 큐레이션 자동 포스팅 서비스. 네이버 
 ---
 
 ## 아키텍처
+![Architecture](storage/screenshots/architecture.png)
+
+---
 
 ### 자동 포스팅 전체 흐름
 
@@ -48,21 +51,13 @@ FastAPI 기반 금융 뉴스 큐레이션 자동 포스팅 서비스. 네이버 
        │                │           │           │             │
        │                │ scrape()  │           │             │
        │                ├──────────►│           │             │
-       │                │           │ Playwright│             │
-       │                │           │ → 네이버 금융 랭킹 페이지 │
-       │                │           │ → 랜덤 2건 클릭         │
-       │                │           │ → 본문 텍스트 추출      │
+       │                │           │           │             │
        │                │ articles  │           │             │
        │                │◄──────────┤           │             │
        │                │                       │             │
        │                │ summarize_many()      │             │
        │                ├──────────────────────►│             │
-       │                │              Groq API │             │
-       │                │              llama-3.1│             │
-       │                │              → JSON   │             │
-       │                │              (title,  │             │
-       │                │               content,│             │
-       │                │               tags)   │             │
+       │                │                       │             │
        │                │ summarized            │             │
        │                │◄──────────────────────┤             │
        │                │                                     │
@@ -70,41 +65,14 @@ FastAPI 기반 금융 뉴스 큐레이션 자동 포스팅 서비스. 네이버 
        │                ├────────────────────────────────────►│
        │                │            Playwright               │
        │                │            ├─ storage_state 로드    │
-       │                │            ├─ /tistory.com 진입     │
        │                │            ├─ 새 탭(글쓰기) 열기    │
-       │                │            ├─ 마크다운 모드 전환    │
-       │                │            ├─ CodeMirror setValue   │
-       │                │            ├─ 태그 입력             │
        │                │            └─ 공개 발행 클릭        │
        │                │                                     │
-       │ { ok }         │                                     │
-       │◄───────────────┤                                     │
+       │ { DONE }       │                                     │
+       │◄───────────────┤
 ```
 
-### LLM 요약 처리 흐름
-
-```
-[FastAPI]                [Groq SDK]              [Groq Cloud]
-   │                         │                        │
-   │ summarize_many(articles)│                        │
-   │ ── asyncio.gather() ──► │                        │
-   │                         │ chat.completions.create│
-   │                         ├───────────────────────►│
-   │                         │   model: llama-3.1-8b  │
-   │                         │   system: prompt       │
-   │                         │   user: article body   │
-   │                         │   response_format:     │
-   │                         │     json_object        │
-   │                         │                        │
-   │                         │◄───────────────────────┤
-   │                         │   JSON 응답            │
-   │ [{title, content, tags}]│                        │
-   │◄────────────────────────┤                        │
-   │                         │                        │
-   │ 후처리:                 │                        │
-   │  - title 줄바꿈 제거    │                        │
-   │  - 32자 초과 시 잘라냄  │                        │
-```
+---
 
 ### Tistory 글쓰기 자동화 (Playwright)
 
