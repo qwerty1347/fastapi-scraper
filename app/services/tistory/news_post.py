@@ -2,7 +2,7 @@ import asyncio
 import random
 
 from datetime import datetime as dt
-from playwright.async_api import BrowserContext, Page
+from playwright.async_api import BrowserContext, Page, TimeoutError as PlaywrightTimeoutError
 
 from app.core.config import TISTORY_STORAGE
 from app.core.exceptions.custom import TistorySessionExpiredException
@@ -62,7 +62,7 @@ class TistoryNewsPostService:
                 hour = time[0]
                 minutes = time[1]
             case ('random'):
-                hour = f"{random.randint(9, 16):02d}"
+                hour = f"{random.randint(9, 18):02d}"
                 minutes = f"{random.randint(0, 59):02d}"
 
         return {'date': date, 'hour': hour, 'minutes': minutes}
@@ -211,17 +211,20 @@ class TistoryNewsPostService:
     async def do_posting(self, summarized_article: list[dict[str, str]], reservation_data: dict[str, str] | None = None):
         try:
             await self.do_login()
+            print("* 로그인")
 
-            if await self.page.locator('a[title="글쓰기"]').count() == 0:
-                raise TistorySessionExpiredException()
-
-            for article in summarized_article:
+            for index, article in enumerate(summarized_article):
                 await self.click_post_page()
-                print("* 글쓰기")
+                print(f"* {index + 1}번째 글쓰기")
                 await self.write_posting(article)
-                print("* 글발행")
+                print(f"* {index + 1}번째 글발행")
                 await self.publish_posting(reservation_data)
-                await asyncio.sleep(random.uniform(4, 8))
+                await asyncio.sleep(random.uniform(1, 2))
+
+        except PlaywrightTimeoutError as e:
+            print("* 로그인 실패")
+            print(exception_format(e))
+            raise TistorySessionExpiredException()
 
         except Exception as e:
             print(exception_format(e))

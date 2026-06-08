@@ -25,7 +25,7 @@ FastAPI 기반 금융 뉴스 큐레이션 자동 포스팅 서비스. 네이버 
 | 영역 | 내용 |
 |---|---|
 | **뉴스 스크래핑** | Playwright로 네이버 금융 "많이 본 뉴스" 페이지에서 랜덤 2건 선정. 새 탭에서 본문 추출 후 닫기 |
-| **LLM 요약** | Groq `llama-3.1-8b-instant` 모델로 기사 본문 → JSON(`title`, `content`, `tags`) 변환. `response_format={"type": "json_object"}` 로 안정성 확보 |
+| **LLM 요약** | `llama-3.1-8b-instant` 모델로 기사 본문 → JSON(`title`, `content`, `tags`) 변환. `response_format={"type": "json_object"}` 로 안정성 확보 |
 | **마크다운 콘텐츠 생성** | 시스템 프롬프트로 25~32자 제목 + 800~1200자 마크다운 본문 + `||` 구분 태그 5개 강제 |
 | **티스토리 자동 로그인** | 카카오 OAuth를 통한 첫 로그인 후 브라우저 컨텍스트 세션(`storage_state`)을 파일로 저장 → 이후 실행은 자동 |
 | **마크다운 모드 자동 전환** | 티스토리 에디터의 기본 모드 → 마크다운 모드 변경 confirm 자동 처리. CodeMirror JS API(`setValue` + change 이벤트 디스패치)로 본문 즉시 입력 |
@@ -41,7 +41,7 @@ FastAPI 기반 금융 뉴스 큐레이션 자동 포스팅 서비스. 네이버 
 
 ---
 
-### 자동 포스팅 전체 흐름
+### 자동 포스팅 파이프라인
 
 ```
 [Client/Notebook]   [FastAPI]   [Scraper]    [LLM]       [Tistory]
@@ -124,7 +124,6 @@ FastAPI 기반 금융 뉴스 큐레이션 자동 포스팅 서비스. 네이버 
 - **Playwright** 1.58.0 (chromium, headless 옵션 지원)
 
 ### LLM
-- **groq** (Groq Python SDK, `AsyncGroq` 클라이언트)
 - 모델: `llama-3.1-8b-instant` (빠른 응답)
 
 ### 데이터베이스 / 큐
@@ -287,7 +286,7 @@ fastapi-tistory/
 `summarize_many`는 `asyncio.gather`로 여러 기사를 병렬 처리.
 
 각 기사는 `summarize_one` 에서:
-1. Groq API에 시스템 프롬프트 + 기사 본문 전송
+1. LLM 요청 (시스템 프롬프트 + 기사 본문 전송)
 2. `response_format={"type": "json_object"}` 로 JSON 강제
 3. 응답 파싱 후 제목 후처리 (줄바꿈 제거, 32자 초과 시 잘라냄)
 
@@ -427,7 +426,6 @@ storage/logs/
 | **카카오 최초 로그인 자동화** | ❌ | 2FA·캡차로 인해 첫 로그인은 수동 진행 필요 |
 | **이미지 자동 첨부** | ❌ | LLM 출력은 텍스트 마크다운만. 이미지·인용은 후속 단계로 |
 | **태그 검증** | ⚠️ | LLM이 가끔 32자 초과 제목·잘못된 따옴표 생성 (재시도 로직 부재) |
-| **Groq Rate Limit 대비** | ⚠️ | 무료 티어 일일 토큰 제한 시 자동 폴백·재시도 부재 |
 | **응답 스키마 / response_model 일치성** | ⚠️ | 라우터 응답과 실제 반환 타입 정합 미흡 |
 | **테스트 커버리지** | ❌ | `tests/`에 샘플만 있고 실질 커버리지 없음 |
 | **DB 통합** | ⚠️ | MySQL/MongoDB가 docker-compose에 정의돼 있으나 실제 사용처는 미연결 (스크랩 이력·발행 결과 저장 예정) |
@@ -441,3 +439,10 @@ storage/logs/
 4. **이미지 후처리**: LLM 본문 안에 placeholder 삽입 → 별도 단계에서 실제 이미지 검색·업로드·치환
 5. **테스트**: Playwright 부분은 mocking, LLM 부분은 fixture, Tistory 부분은 storage_state mocking
 6. **세션 만료 감지**: 자동 로그인 실패 시 알림 → 재로그인 안내
+
+---
+
+## 실행 화면
+
+### 티스토리 자동 포스팅
+![티스토리 자동 포스팅](storage/screenshots/news_post.gif)
