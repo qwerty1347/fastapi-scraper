@@ -33,6 +33,7 @@ class NewsSummarizeService:
 
     async def summarize_many(self, articles: list[dict[str, str]]) -> list[dict[str, str]]:
         tasks = [self.summarize_one(article['article']) for article in articles]
+        await asyncio.sleep(1)
         summarized = await asyncio.gather(*tasks)
 
         # ! 하드코딩
