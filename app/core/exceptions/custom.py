@@ -13,7 +13,7 @@ class TistorySessionExpiredException(BusinessException):
         super().__init__(
             code=401,
             message=(
-                "티스토리 로그인 세션이 만료되었습니다. "
+                "로그인 세션이 만료되었습니다. "
                 "storage/tistory/browser_context.json 을 갱신하세요."
             ),
         )

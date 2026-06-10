@@ -21,7 +21,7 @@ class TistoryLoginService:
 
     async def open_login_page(self) -> Page:
         """브라우저를 띄우고 티스토리 메인 페이지를 연다."""
-        await self.pm.start(headless=False)
+        await self.pm.start()
         self.context = await self.pm.create_context()
         self.page = await self.context.new_page()
         await self.page.goto("https://www.tistory.com", wait_until="domcontentloaded")
