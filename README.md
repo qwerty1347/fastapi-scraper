@@ -178,13 +178,13 @@ fastapi-tistory/
 │   │   └── common.py                       # BaseResponse 제네릭
 │   ├── services/
 │   │   ├── scraper/
-│   │   │   └── finance_news.py             # FinanceNewsScraperService
+│   │   │   └── finance_news.py             # FinanceNewsScrapService
 │   │   ├── llm/
 │   │   │   └── news_summarize.py           # NewsSummarizeService (summarize_one/many)
 │   │   └── tistory/
 │   │       ├── login.py                    # TistoryLoginService (카카오 OAuth → storage_state 저장)
 │   │       ├── post.py
-│   │       └── news_post.py                # TistoryNewsPostService (글쓰기/발행 전체)
+│   │       └── news_post.py                # TistoryPostService (글쓰기/발행 전체)
 │   └── main.py                             # FastAPI 진입점
 ├── config/
 │   └── llm.py                              # LLMConfig (모델별 파라미터)
@@ -213,60 +213,152 @@ fastapi-tistory/
 
 ## API 명세
 
-모든 엔드포인트는 `/api/v1` 프리픽스 아래에 있습니다.
+모든 엔드포인트는 `/api/v1/` 프리픽스 아래에 있습니다.
 
-### 자동 포스팅
+### 공통 응답 포맷
 
-| Method | Path | 설명 |
-|---|---|---|
-| `GET` | `/api/v1/scraper/` | 헬스체크 |
-| `POST` | `/api/v1/scraper/run` | 스크래핑 → LLM 요약 → 티스토리 발행 전체 파이프라인 실행 |
+성공 응답은 `success_response` 헬퍼로 다음 엔벨로프로 감쌉니다 (`code` 는 문자열):
 
-**요청** (`POST /api/v1/scraper/run`):
 ```json
 {
-  "max_articles": 2
+  "code": "200",
+  "data": { /* 엔드포인트별 데이터 */ }
 }
 ```
 
-**응답** (성공 200):
+### 엔드포인트 목록
+
+| Method | Path | 설명 | 요청 바디 |
+|---|---|---|---|
+| `GET` | `/api/v1/tistory/` | 헬스체크 | — |
+| `GET` | `/api/v1/tistory/scrap/finance` | 네이버 금융 랭킹 뉴스 스크래핑 | — |
+| `POST` | `/api/v1/tistory/summarize/finance` | 스크랩된 기사들을 LLM으로 요약 | `FinanceSummarizeRequest` |
+| `POST` | `/api/v1/tistory/publish/finance` | 요약 결과를 티스토리에 발행 | `FinancePublishRequest` |
+| `POST` | `/api/v1/tistory/run` | 스크래핑 → 요약 → 발행 전체 파이프라인 (예정) | — |
+
+> 파이프라인은 보통 **scrap → summarize → publish** 순으로 호출합니다. `run` 은 이 3단계를 한 번에 묶는 엔드포인트입니다.
+
+---
+
+#### `GET /api/v1/tistory/scrap/finance`
+
+지정한 뉴스 기사의 랜덤으로 본문을 스크래핑합니다.
+
+**응답** (200):
 ```json
 {
-  "code": 200,
+  "code": "200",
   "data": {
-    "scraped": 2,
-    "summarized": 2,
-    "posted": 2,
     "articles": [
-      {
-        "title": "반도체 호황에 코스피 쏠림 심화",
-        "url": "https://yourname.tistory.com/123",
-        "tags": ["삼성전자", "반도체", "코스피", "AI", "ETF"]
-      },
-      ...
+      { "article": "기사 본문 텍스트..." },
+      { "article": "기사 본문 텍스트..." }
     ]
   }
 }
 ```
 
-**에러 응답** (422 UNPROCESSABLE_ENTITY):
-- LLM이 JSON 형식 위반 (드물게)
-- 티스토리 로그인 세션 만료
-- Playwright timeout (페이지 로드 실패 등)
+---
 
+#### `POST /api/v1/tistory/summarize/finance`
+
+스크랩한 기사들을 LLM으로 요약해 제목·본문(마크다운)·태그로 가공합니다.
+
+**요청** (`FinanceSummarizeRequest`):
 ```json
 {
-  "code": 422,
-  "message": "Posting Failed",
-  "errors": [...]
+  "articles": [
+    { "article": "기사 본문 텍스트..." },
+    { "article": "기사 본문 텍스트..." }
+  ]
+}
+```
+
+**응답** (200):
+```json
+{
+  "code": "200",
+  "data": {
+    "summarized_articles": [
+      {
+        "title": "30자 이내 제목",
+        "content": "## 소제목\n\n마크다운 본문...",
+        "tags": "삼성전자||반도체||AI||코스피||ETF"
+      }
+    ]
+  }
 }
 ```
 
 ---
 
+#### `POST /api/v1/tistory/publish/finance`
+
+요약 결과를 티스토리 블로그에 발행합니다. `reservation_data` 로 예약 발행을 지정할 수 있습니다.
+
+**요청** (`FinancePublishRequest`):
+```json
+{
+  "summarized_articles": [
+    {
+      "title": "30자 이내 제목",
+      "content": "## 소제목\n\n마크다운 본문...",
+      "tags": "삼성전자||반도체||AI||코스피||ETF"
+    }
+  ],
+  "reservation_data": {
+    "type": "fix",
+    "date": "2026-06-15",
+    "time": "09:45"
+  }
+}
+```
+
+필드 설명:
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `summarized_articles` | `SummarizedArticle[]` | 발행할 글 목록 (`title`, `content`, `tags`) |
+| `reservation_data` | `object \| null` | 예약 정보. `null` 이면 **즉시(현재) 발행** |
+| `reservation_data.type` | `"fix" \| "random"` | 예약 방식 (고정 / 랜덤) |
+| `reservation_data.date` | `string` (`YYYY-MM-DD`) | 예약 날짜. **오늘 이전이면 422** (`model_validator` 검증) |
+| `reservation_data.time` | `string \| null` | 예약 시각 (`HH:MM`) |
+
+**응답** (200):
+```json
+{
+  "code": "200",
+  "data": {
+    "posted": 1
+  }
+}
+```
+
+---
+
+### 에러 응답
+
+비즈니스 예외(`BusinessException`)는 전역 핸들러가 다음 포맷으로 반환합니다:
+
+```json
+{
+  "code": "400",
+  "message": "예약 날짜가 오늘보다 이전입니다",
+  "errors": []
+}
+```
+
+| 상황 | 코드 |
+|---|---|
+| 요청 바디 검증 실패 (필드 누락/타입 불일치/과거 예약일 등) | `422` |
+| 비즈니스 규칙 위반 (`BusinessException`) | `400` |
+| 티스토리 로그인 세션 만료 (`TistorySessionExpiredException`) | `401` |
+| Playwright timeout, LLM JSON 위반 등 내부 오류 | `500` |
+
+---
+
 ## 도메인 상세
 
-### 1) 뉴스 스크래핑 (`FinanceNewsScraperService`)
+### 1) 뉴스 스크래핑 (`FinanceNewsScrapService`)
 
 대상: `https://finance.naver.com/news/news_list.naver?mode=RANK`
 
@@ -306,7 +398,7 @@ fastapi-tistory/
 - SEO 키워드 3~5회 자연스러운 반복
 - 태그 `||` 구분 5개 이내
 
-### 3) 티스토리 자동 포스팅 (`TistoryNewsPostService`)
+### 3) 티스토리 자동 포스팅 (`TistoryPostService`)
 
 핵심 동작:
 
@@ -330,13 +422,13 @@ Windows 환경에서는 Jupyter 기본 `SelectorEventLoop`가 subprocess를 지�
 ```python
 from app.core.utils.notebook import run_async
 from app.modules.browser.playwright import PlaywrightManager
-from app.services.scraper.finance_news import FinanceNewsScraperService
+from app.services.scraper.finance_news import FinanceNewsScrapService
 from app.services.llm.news_summarize import NewsSummarizeService
 from app.modules.llm.groq import create_async_groq_client
-from app.services.tistory.news_post import TistoryNewsPostService
+from app.services.tistory.news_post import TistoryPostService
 
 # 1) 스크래핑
-fns = FinanceNewsScraperService(PlaywrightManager())
+fns = FinanceNewsScrapService(PlaywrightManager())
 articles = run_async(fns.do_scraping())
 
 # 2) LLM 요약
@@ -344,7 +436,7 @@ ns = NewsSummarizeService(create_async_groq_client())
 summarized = run_async(ns.summarize_many(articles))
 
 # 3) 티스토리 발행
-poster = TistoryNewsPostService(PlaywrightManager())
+poster = TistoryPostService(PlaywrightManager())
 run_async(poster.do_posting(summarized))
 ```
 

@@ -9,9 +9,10 @@ from app.core.exceptions.custom import TistorySessionExpiredException
 from app.core.logger import logger
 from app.core.utils.error import exception_format
 from app.modules.browser.playwright import PlaywrightManager
+from app.schemas.tistory.article import ReservationData, SummarizedArticle
 
 
-class TistoryNewsPostService:
+class TistoryPostService:
     """
     * 글쓰기
     ✅1 context 불러와 로그인
@@ -33,7 +34,7 @@ class TistoryNewsPostService:
 
 
     async def do_login(self):
-        await self.pm.start(headless=False)
+        await self.pm.start()
         tistory_context = str(TISTORY_STORAGE / "browser_context.json")
         self.context = await self.pm.create_context(storage_state=tistory_context)
         self.page = await self.context.new_page()
@@ -53,12 +54,12 @@ class TistoryNewsPostService:
             asyncio.create_task(dialog.accept())
 
 
-    def handle_reservation_data(self, reservation_data: dict[str, str]) -> dict[str, str]:
-        date = reservation_data['date']
+    def handle_reservation_data(self, reservation_data: ReservationData) -> dict[str, str]:
+        date = reservation_data.date
 
-        match (reservation_data['type']):
-            case ('fixed'):
-                time = reservation_data['time'].split(':')
+        match (reservation_data.type):
+            case ('fix'):
+                time = reservation_data.time.split(':')
                 hour = time[0]
                 minutes = time[1]
             case ('random'):
@@ -78,14 +79,14 @@ class TistoryNewsPostService:
         self.post_page.on('dialog', self._handle_dialog)
 
 
-    async def write_posting(self, article: dict[str, str]):
+    async def write_posting(self, article: SummarizedArticle):
         # 1) 마크다운 모드로 전환 (confirm은 _handle_dialog가 자동 처리)
         await self.post_page.locator('#editor-mode-layer-btn-open').click()
         await self.post_page.wait_for_selector('#editor-mode-markdown-text')
         await self.post_page.locator('#editor-mode-markdown-text').click()
 
         # 2) 제목
-        await self.post_page.locator('#post-title-inp').fill(article['title'])
+        await self.post_page.locator('#post-title-inp').fill(article.title)
 
         # 3) 본문 — 마크다운 모드 CodeMirror에 입력
         # setValue만으로는 티스토리가 변경 감지를 못 해서 폼 저장 시 빈 본문으로 처리됨.
@@ -112,7 +113,7 @@ class TistoryNewsPostService:
                     }
                 }
             }
-        """, article['content'])
+        """, article.content)
 
         # 추가 안전망: keyboard로 글자 하나 더 입력 후 backspace
         # → 티스토리가 사용자 입력으로 인식하여 폼 상태 갱신
@@ -124,7 +125,7 @@ class TistoryNewsPostService:
         # 4) 태그
         await self.post_page.wait_for_selector('input[name="tagText"]')
         tag_text = self.post_page.locator('input[name="tagText"]')
-        tags = [t.strip() for t in article['tags'].split('||') if t.strip()][:6]
+        tags = [t.strip() for t in article.tags.split('||') if t.strip()][:6]
         for tag in tags:
             await tag_text.fill(tag)
             await tag_text.press('Enter')
@@ -182,7 +183,7 @@ class TistoryNewsPostService:
         ).first.click()
 
 
-    async def publish_posting(self, reservation_data: dict[str, str] | None = None):
+    async def publish_posting(self, reservation_data: ReservationData | None = None):
         # 1) 기본 (공개)
         await self.post_page.locator('input[name="basicSet"][value="20"]').check()
 
@@ -208,18 +209,22 @@ class TistoryNewsPostService:
         # todo: 대표이미지, 홈주제 추가
 
 
-    async def do_posting(self, summarized_article: list[dict[str, str]], reservation_data: dict[str, str] | None = None):
+    async def do_posting(self, summarized_articles: list[SummarizedArticle], reservation_data: ReservationData | None = None) -> dict[str, int]:
         try:
             await self.do_login()
             print("* 로그인")
 
-            for index, article in enumerate(summarized_article):
+            for index, article in enumerate(summarized_articles):
                 await self.click_post_page()
                 print(f"* {index + 1}번째 글쓰기")
                 await self.write_posting(article)
                 print(f"* {index + 1}번째 글발행")
                 await self.publish_posting(reservation_data)
                 await asyncio.sleep(random.uniform(1, 2))
+
+            return {
+                'posted': len(summarized_articles),
+            }
 
         except PlaywrightTimeoutError as e:
             print("* 로그인 실패")
@@ -228,6 +233,7 @@ class TistoryNewsPostService:
 
         except Exception as e:
             print(exception_format(e))
+            raise
 
         finally:
             # await self.page.pause()

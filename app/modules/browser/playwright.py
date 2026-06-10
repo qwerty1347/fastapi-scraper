@@ -2,14 +2,15 @@ from playwright.async_api import Browser, BrowserContext, Playwright, async_play
 
 
 class PlaywrightManager:
-    def __init__(self):
+    def __init__(self, headless=False):
         self.playwright: Playwright | None = None
         self.browser: Browser | None = None
+        self.headless: bool = headless
 
 
-    async def start(self, headless=True):
+    async def start(self):
         self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.chromium.launch(headless=headless)
+        self.browser = await self.playwright.chromium.launch(headless=self.headless)
 
 
     async def close(self):
