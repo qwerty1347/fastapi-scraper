@@ -1,9 +1,9 @@
-from http import HTTPStatus
+from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
 
-def success_response(data=None, code: int = HTTPStatus.OK) -> JSONResponse:
+def success_response(data=None, code: int = status.HTTP_200_OK) -> JSONResponse:
     """
     성공 응답을 반환하는 함수
 
@@ -29,7 +29,7 @@ def success_response(data=None, code: int = HTTPStatus.OK) -> JSONResponse:
     )
 
 
-def error_response(code: int = HTTPStatus.INTERNAL_SERVER_ERROR, message: str | None = None, errors: list | None = None) -> JSONResponse:
+def error_response(code: int = status.HTTP_500_INTERNAL_SERVER_ERROR, message: str | None = None, errors: list | None = None) -> JSONResponse:
     """
     오류 응답을 반환하는 함수
 
