@@ -9,7 +9,7 @@ from app.schemas.tistory.request import FinancePublishRequest, FinanceSummarizeR
 from app.schemas.tistory.response import PostingResponse
 from app.services.llm.news_summarize import NewsSummarizeService
 from app.services.scraper.finance_news import FinanceNewsScrapService
-from app.services.tistory.news_post import TistoryPostService
+from app.services.tistory.post import TistoryPostService
 
 
 router = APIRouter(prefix="/tistory", tags=["tistory"])
