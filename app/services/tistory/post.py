@@ -178,10 +178,12 @@ class TistoryPostService:
                 await self.post_page.locator('.box_calendar button.btn_prev').click()
             await asyncio.sleep(0.15)
 
-        # 3) 해당 일자 클릭 (캘린더 테이블 내부로 한정 → 본문/태그와 충돌 방지)
+        # 3) 해당 일자 클릭
+        # 주의: :text("12") 는 부분일치라 날짜 칸 외에 숫자가 이어진 행(tr)까지 매칭되어
+        # → .btn_day(실제 날짜 버튼) + :text-is(정확일치) 로 해당 일자만 정확히 클릭.
         await self.post_page.locator(
-            f'.box_calendar table.tbl_calendar :text("{target.day}")'
-        ).first.click()
+            f'.box_calendar table.tbl_calendar .btn_day:text-is("{target.day}")'
+        ).click()
 
 
     async def publish_posting(self, reservation_data: ReservationData | None = None):
