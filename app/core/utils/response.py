@@ -1,9 +1,13 @@
-from http import HTTPStatus
+from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
 
-def success_response(data=None, code: int = HTTPStatus.OK) -> JSONResponse:
+def success_response(
+    data=None,
+    status_code: int = status.HTTP_200_OK,
+    code: str | None = None
+) -> JSONResponse:
     """
     성공 응답을 반환하는 함수
 
@@ -12,7 +16,8 @@ def success_response(data=None, code: int = HTTPStatus.OK) -> JSONResponse:
 
     Args:
         data: 성공 응답의 데이터. Defaults to None.
-        code (int): 성공 응답의 상태 코드. Defaults to 200.
+        status_code (int): HTTP 상태 코드. Defaults to 200.
+        code (str | None): 응답 본문의 "code" 값(업무 코드). 없으면 status_code를 문자열로 사용. Defaults to None.
 
     Returns:
         JSONResponse: 성공 응답을 포함하는 FastAPI JSONResponse 객체.
@@ -21,20 +26,26 @@ def success_response(data=None, code: int = HTTPStatus.OK) -> JSONResponse:
         data = {}
 
     return JSONResponse(
-        status_code=code,
+        status_code=status_code,
         content=jsonable_encoder({
-            "code": str(code),
+            "code": code if code is not None else str(status_code),
             "data": data
         })
     )
 
 
-def error_response(code: int = HTTPStatus.INTERNAL_SERVER_ERROR, message: str | None = None, errors: list | None = None) -> JSONResponse:
+def error_response(
+    status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
+    code: str | None = None,
+    message: str | None = None,
+    errors: list | None = None
+) -> JSONResponse:
     """
     오류 응답을 반환하는 함수
 
     Args:
-        code (int): 에러 응답의 상태 코드. Defaults to 500.
+        status_code (int): HTTP 상태 코드. Defaults to 500.
+        code (str | None): 응답 본문의 "code" 값(업무 코드). 없으면 status_code를 문자열로 사용. Defaults to None.
         message (str | None): 에러 응답의 메시지. Defaults to None.
         errors (list | None): 에러 정보. Defaults to None.
 
@@ -48,9 +59,9 @@ def error_response(code: int = HTTPStatus.INTERNAL_SERVER_ERROR, message: str | 
         errors = []
 
     return JSONResponse(
-        status_code=code,
+        status_code=status_code,
         content={
-            "code": str(code),
+            "code": code if code is not None else str(status_code),
             "message": message,
             "errors": errors
         }

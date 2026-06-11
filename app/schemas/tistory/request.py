@@ -9,4 +9,4 @@ class FinanceSummarizeRequest(BaseModel):
 
 class FinancePublishRequest(BaseModel):
     summarized_articles: list[SummarizedArticle]
-    reservation_data: ReservationData | None
+    reservation_data: ReservationData | None = None
