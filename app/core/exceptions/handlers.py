@@ -9,21 +9,21 @@ from app.core.utils.response import error_response
 
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     return error_response(
-        code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         message=str(exc)
     )
 
 
 async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
     return error_response(
-        code=exc.status_code,
+        status_code=exc.status_code,
         message=str(exc.detail)
     )
 
 
 async def validation_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     return error_response(
-        code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         message="Validation Error",
         errors=[
             {
@@ -37,7 +37,7 @@ async def validation_exception_handler(request: Request, exc: HTTPException) -> 
 
 async def business_exception_handler(request: Request, exc: BusinessException) -> JSONResponse:
     return error_response(
-        code=exc.code,
+        status_code=exc.code,
         message=exc.message,
         errors=exc.errors
     )

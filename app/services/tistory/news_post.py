@@ -10,6 +10,7 @@ from app.core.logger import logger
 from app.core.utils.error import exception_format
 from app.modules.browser.playwright import PlaywrightManager
 from app.schemas.tistory.article import ReservationData, SummarizedArticle
+from app.schemas.tistory.response import PostingResponse
 
 
 class TistoryPostService:
@@ -209,7 +210,7 @@ class TistoryPostService:
         # todo: 대표이미지, 홈주제 추가
 
 
-    async def do_posting(self, summarized_articles: list[SummarizedArticle], reservation_data: ReservationData | None = None) -> dict[str, int]:
+    async def do_posting(self, summarized_articles: list[SummarizedArticle], reservation_data: ReservationData | None = None) -> PostingResponse:
         try:
             await self.do_login()
             print("* 로그인")
@@ -223,7 +224,7 @@ class TistoryPostService:
                 await asyncio.sleep(random.uniform(1, 2))
 
             return {
-                'posted': len(summarized_articles),
+                'posted_count': len(summarized_articles),
             }
 
         except PlaywrightTimeoutError as e:
