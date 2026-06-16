@@ -32,7 +32,7 @@ class FinanceNewsScrapService:
 
     async def scrap_newslist(self) -> list[Locator]:
         newslist = await self.page.locator("div.hotNewsList ul.simpleNewsList > li").all()
-        picked_newslist: list[Locator] = random.sample(newslist, k=5)
+        picked_newslist = random.sample(newslist, k=5)
         return picked_newslist
 
 
@@ -71,6 +71,7 @@ class FinanceNewsScrapService:
 
         except Exception as e:
             print(exception_format(e))
+            raise
 
         finally:
             await self.pm.close()
