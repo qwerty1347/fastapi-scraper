@@ -32,11 +32,20 @@ class FinanceNewsScrapService:
 
     async def scrap_newslist(self) -> list[Locator]:
         newslist = await self.page.locator("div.hotNewsList ul.simpleNewsList > li").all()
-        picked_newslist = random.sample(newslist, k=5)
+        picked_newslist = random.sample(newslist, k=2)
         return picked_newslist
 
 
     async def click_article(self, li: Locator) -> Page:
+        """
+        새 창으로 열기로 링크를 열고 새로운 페이지를 반환합니다.
+
+        Args:
+            li: 뉴스 리스트 아이템 Locator
+
+        Returns:
+            Page: 새로 열린 아티클 페이지
+        """
         async with self.context.expect_page() as new_page_info:
             await li.locator("a").click()
         return await new_page_info.value

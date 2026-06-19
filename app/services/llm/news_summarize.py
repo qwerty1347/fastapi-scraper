@@ -3,9 +3,9 @@ import json
 
 from groq import AsyncGroq
 
-from app.modules.llm.prompt import FINANCE_NEWS_SYSTEM_PROMPT
+from app.modules.llm.config import LLMConfig
+from app.prompts.finance_news import FINANCE_NEWS_SYSTEM_PROMPT
 from app.schemas.tistory.article import FinanceArticle, SummarizedArticle
-from config.llm import LLMConfig
 
 
 class NewsSummarizeService:
@@ -18,9 +18,13 @@ class NewsSummarizeService:
             model=LLMConfig.MODELS['llama']['3.3-70b-versatile']['model'],
             messages=[
                 {"role": "system", "content": FINANCE_NEWS_SYSTEM_PROMPT},
-                {"role": "user", "content": article}
+                {"role": "user", "content": (
+                    "아래 <기사>를 '소재'로, 시스템 규칙에 맞춰 티스토리 블로그 글을 JSON으로 작성해줘.\n"
+                    f"<기사>\n{article}\n</기사>"
+                )}
             ],
             response_format={"type": "json_object"},
+            temperature=0.8,
         )
         await asyncio.sleep(5)
         result = json.loads(response.choices[0].message.content)

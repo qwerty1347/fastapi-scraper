@@ -173,7 +173,9 @@ fastapi-tistory/
 │   │   │   └── playwright.py               # PlaywrightManager (start/close/create_context)
 │   │   └── llm/
 │   │       ├── groq.py                     # create_async_groq_client
-│   │       └── prompt.py                   # FINANCE_NEWS_SYSTEM_PROMPT
+│   │       └── config.py                   # LLMConfig (모델별 파라미터)
+│   ├── prompts/
+│   │   └── finance_news.py                 # FINANCE_NEWS_SYSTEM_PROMPT
 │   ├── schemas/
 │   │   └── common.py                       # BaseResponse 제네릭
 │   ├── services/
@@ -186,8 +188,6 @@ fastapi-tistory/
 │   │       ├── post.py
 │   │       └── news_post.py                # TistoryPostService (글쓰기/발행 전체)
 │   └── main.py                             # FastAPI 진입점
-├── config/
-│   └── llm.py                              # LLMConfig (모델별 파라미터)
 ├── notebooks/
 │   ├── test.ipynb
 │   └── tistory/
@@ -391,7 +391,7 @@ fastapi-tistory/
 }
 ```
 
-프롬프트는 `app/modules/llm/prompt.py` 의 `FINANCE_NEWS_SYSTEM_PROMPT` 참고:
+프롬프트는 `app/prompts/finance_news.py` 의 `FINANCE_NEWS_SYSTEM_PROMPT` 참고:
 - 제목 32자 초과 금지
 - 본문 내 큰따옴표 사용 금지 (JSON escape 깨짐 방지)
 - 일본어·중국어 문자 금지
