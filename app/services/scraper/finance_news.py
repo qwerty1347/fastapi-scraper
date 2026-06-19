@@ -30,7 +30,7 @@ class FinanceNewsScrapService:
         await self.page.goto(FINANCE_NEWS_URL, wait_until='domcontentloaded')
 
 
-    async def scrap_newslist(self) -> list[Locator]:
+    async def scrap_news_list(self) -> list[Locator]:
         newslist = await self.page.locator("div.hotNewsList ul.simpleNewsList > li").all()
         picked_newslist = random.sample(newslist, k=2)
         return picked_newslist
@@ -61,7 +61,7 @@ class FinanceNewsScrapService:
         try:
             await self.open_finance_news_page()
             print("* 아티클 스크래핑")
-            picked_newslist = await self.scrap_newslist()
+            picked_newslist = await self.scrap_news_list()
 
             articles = []
             for news in picked_newslist:

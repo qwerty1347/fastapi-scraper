@@ -25,3 +25,7 @@ class ReservationData(BaseModel):
         if self.date < dt.now().strftime('%Y-%m-%d'):
             raise ValueError('예약 날짜가 오늘보다 이전입니다')
         return self
+
+
+class EntertainmentArticle(BaseModel):
+    article: str
