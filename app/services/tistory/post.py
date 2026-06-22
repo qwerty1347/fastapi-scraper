@@ -13,6 +13,13 @@ from app.schemas.tistory.article import ReservationData, SummarizedArticle
 from app.schemas.tistory.response import PostingResponse
 
 
+BLOG_NAMES = {
+    'finance': '오늘의 금융/증권 이야기',
+    'entertain': '오늘의 연예 이야기',
+    'coding': '오늘의 코딩/개발 이야기',
+}
+
+
 class TistoryPostService:
     """
     * 글쓰기
@@ -27,8 +34,8 @@ class TistoryPostService:
     ✅1 스크래핑된 아티클 llm 요청
     ✅2 llm 응답 글쓰기 내용에 연동
     """
-    def __init__(self, playwright_manager: PlaywrightManager):
-        self.pm = playwright_manager
+    def __init__(self, playwright_manager):
+        self.pm: PlaywrightManager = playwright_manager
         self.context: BrowserContext | None = None
         self.page: Page | None = None
         self.post_page: Page | None = None
@@ -39,7 +46,15 @@ class TistoryPostService:
         tistory_context = str(TISTORY_STORAGE / "browser_context.json")
         self.context = await self.pm.create_context(storage_state=tistory_context)
         self.page = await self.context.new_page()
-        await self.page.goto("https://www.tistory.com", wait_until="domcontentloaded")
+
+
+    async def switch_blog(self, blog_category: str):
+        blog_name = BLOG_NAMES.get(blog_category)
+        if blog_name is None:
+            raise ValueError(f"Invalid category: {blog_category}")
+
+        await self.page.locator('.list_mytistory').click()
+        await self.page.locator('a.link_blog', has_text=blog_name).click()
 
 
     def _handle_dialog(self, dialog):
@@ -212,10 +227,14 @@ class TistoryPostService:
         # todo: 대표이미지, 홈주제 추가
 
 
-    async def do_posting(self, summarized_articles: list[SummarizedArticle], reservation_data: ReservationData | None = None) -> PostingResponse:
+    async def do_posting(self, blog_category: str, summarized_articles: list[SummarizedArticle], reservation_data: ReservationData | None = None) -> PostingResponse:
         try:
-            await self.do_login()
             print("* 로그인")
+            await self.do_login()
+            await self.page.goto("https://www.tistory.com", wait_until="domcontentloaded")
+
+            print('* 블로그선택')
+            await self.switch_blog(blog_category)
 
             for index, article in enumerate(summarized_articles):
                 await self.click_post_page()

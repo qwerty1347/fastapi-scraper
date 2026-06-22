@@ -1,12 +1,14 @@
 from pydantic import BaseModel
 
-from app.schemas.tistory.article import FinanceArticle, ReservationData, SummarizedArticle
+from app.schemas.enums import BlogCategory
+from app.schemas.tistory.article import NewsArticle, ReservationData, SummarizedArticle
 
 
-class FinanceSummarizeRequest(BaseModel):
-    articles: list[FinanceArticle]
+class TistorySummarizeRequest(BaseModel):
+    articles: list[NewsArticle]
 
 
-class FinancePublishRequest(BaseModel):
+class TistoryPublishRequest(BaseModel):
+    blog_category: BlogCategory
     summarized_articles: list[SummarizedArticle]
     reservation_data: ReservationData | None = None

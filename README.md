@@ -232,8 +232,8 @@ fastapi-tistory/
 |---|---|---|---|
 | `GET` | `/api/v1/tistory/` | 헬스체크 | — |
 | `GET` | `/api/v1/tistory/scrap/finance` | 네이버 금융 랭킹 뉴스 스크래핑 | — |
-| `POST` | `/api/v1/tistory/summarize/finance` | 스크랩된 기사들을 LLM으로 요약 | `FinanceSummarizeRequest` |
-| `POST` | `/api/v1/tistory/publish/finance` | 요약 결과를 티스토리에 발행 | `FinancePublishRequest` |
+| `POST` | `/api/v1/tistory/summarize/finance` | 스크랩된 기사들을 LLM으로 요약 | `TistorySummarizeRequest` |
+| `POST` | `/api/v1/tistory/publish/finance` | 요약 결과를 티스토리에 발행 | `TistoryPublishRequest` |
 | `POST` | `/api/v1/tistory/run` | 스크래핑 → 요약 → 발행 전체 파이프라인 (예정) | — |
 
 > 파이프라인은 보통 **scrap → summarize → publish** 순으로 호출합니다. `run` 은 이 3단계를 한 번에 묶는 엔드포인트입니다.
@@ -263,7 +263,7 @@ fastapi-tistory/
 
 스크랩한 기사들을 LLM으로 요약해 제목·본문(마크다운)·태그로 가공합니다.
 
-**요청** (`FinanceSummarizeRequest`):
+**요청** (`TistorySummarizeRequest`):
 ```json
 {
   "articles": [
@@ -295,7 +295,7 @@ fastapi-tistory/
 
 요약 결과를 티스토리 블로그에 발행합니다. `reservation_data` 로 예약 발행을 지정할 수 있습니다.
 
-**요청** (`FinancePublishRequest`):
+**요청** (`TistoryPublishRequest`):
 ```json
 {
   "summarized_articles": [

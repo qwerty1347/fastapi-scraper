@@ -1,11 +1,10 @@
 from datetime import datetime as dt
-
 from pydantic import BaseModel, model_validator
 
 from app.schemas.enums import ArticleReservationDate
 
 
-class FinanceArticle(BaseModel):
+class NewsArticle(BaseModel):
     article: str
 
 
@@ -25,7 +24,3 @@ class ReservationData(BaseModel):
         if self.date < dt.now().strftime('%Y-%m-%d'):
             raise ValueError('예약 날짜가 오늘보다 이전입니다')
         return self
-
-
-class EntertainmentArticle(BaseModel):
-    article: str
