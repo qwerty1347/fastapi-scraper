@@ -1,16 +1,17 @@
 import random
 
-from playwright.async_api import Locator, Page
+from playwright.async_api import BrowserContext, Locator, Page
 
 from app.core.utils.error import exception_format
 from app.core.utils.log import save_log
 from app.modules.browser.playwright import PlaywrightManager
 from app.schemas.tistory.article import FinanceArticle
+from app.services.scraper.base import BaseScraperService
 
 
 FINANCE_NEWS_URL = 'https://finance.naver.com/news/news_list.naver?mode=RANK'
 
-class FinanceNewsScrapService:
+class FinanceNewsScrapService(BaseScraperService):
     """
     * 스크래핑
     ✅1 스크래핑 사이트 접속
@@ -19,11 +20,10 @@ class FinanceNewsScrapService:
     """
 
     def __init__(self, playwright_manager: PlaywrightManager):
-        self.pm = playwright_manager
-        self.page: Page | None = None
+        super().__init__(playwright_manager)
 
 
-    async def open_finance_news_page(self):
+    async def open_scraping_page(self):
         await self.pm.start()
         self.context = await self.pm.create_context()
         self.page = await self.context.new_page()
@@ -51,7 +51,7 @@ class FinanceNewsScrapService:
         return await new_page_info.value
 
 
-    async def scrap_article(self, article_page: Page) -> dict:
+    async def scrap_article(self, article_page: Page) -> dict[str, str]:
         content = await article_page.locator("article#dic_area").text_content()
         article = " ".join(content.split())
         return {'article': article}
@@ -59,7 +59,7 @@ class FinanceNewsScrapService:
 
     async def do_scraping(self) -> list[FinanceArticle]:
         try:
-            await self.open_finance_news_page()
+            await self.open_scraping_page()
             print("* 아티클 스크래핑")
             picked_newslist = await self.scrap_news_list()
 
