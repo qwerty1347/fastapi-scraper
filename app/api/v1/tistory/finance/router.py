@@ -3,20 +3,19 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
-from app.core.dependencies.tistory import get_entertain_news_scraper_service, get_news_summarize_service, get_tistory_post_service
+from app.core.dependencies.tistory import get_finance_news_scraper_service, get_news_summarize_service, get_tistory_post_service
 from app.core.utils.response import success_response
-from app.prompts.entertain_news import ENTERTAIN_NEWS_SYSTEM_PROMPT
+from app.prompts.finance_news import FINANCE_NEWS_SYSTEM_PROMPT
 from app.schemas.base import BaseResponse
 from app.schemas.tistory.article import NewsArticle, SummarizedArticle
 from app.schemas.tistory.request import TistoryPublishRequest, TistorySummarizeRequest
 from app.schemas.tistory.response import PostingResponse
 from app.services.llm.news_summarize import NewsSummarizeService
-from app.services.scraper.entertain_news import EntNewsScrapService
+from app.services.scraper.finance_news import FinanceNewsScrapService
 from app.services.tistory.post import TistoryPostService
 
 
-router = APIRouter(prefix="/entertain")
-
+router = APIRouter(prefix="/finance")
 
 @router.get('/', response_model=BaseResponse)
 def index() -> JSONResponse:
@@ -25,9 +24,9 @@ def index() -> JSONResponse:
 
 @router.get('/scrap', response_model=BaseResponse[list[NewsArticle]])
 async def scrap(
-    entertain_scrap: Annotated[EntNewsScrapService, Depends(get_entertain_news_scraper_service)]
+    finance_scrap: Annotated[FinanceNewsScrapService, Depends(get_finance_news_scraper_service)]
 ) -> JSONResponse:
-    response = await entertain_scrap.do_scraping()
+    response = await finance_scrap.do_scraping()
     return success_response({'articles': response})
 
 
@@ -36,8 +35,8 @@ async def summarize(
     payload: TistorySummarizeRequest,
     summarize_service: Annotated[NewsSummarizeService, Depends(get_news_summarize_service)]
 ) -> JSONResponse:
-    response = await summarize_service.summarize_many(payload.articles, ENTERTAIN_NEWS_SYSTEM_PROMPT)
-    return success_response({'summarized_articles': response})
+    summarized_articles = await summarize_service.summarize_many(payload.articles, FINANCE_NEWS_SYSTEM_PROMPT)
+    return success_response({'summarized_articles': summarized_articles})
 
 
 @router.post('/publish', response_model=BaseResponse[PostingResponse])
