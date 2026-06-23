@@ -1,23 +1,24 @@
 from datetime import datetime as dt
-from pydantic import BaseModel, model_validator
+from typing import Annotated
+from pydantic import BaseModel, Field, model_validator
 
-from app.schemas.enums import ArticleReservationDate
+from app.schemas.enums import ArticleReservationType
 
 
 class NewsArticle(BaseModel):
-    article: str
+    article: Annotated[str, Field(min_length=1)]
 
 
 class SummarizedArticle(BaseModel):
-    title: str
-    content: str
-    tags: str
+    title: Annotated[str, Field(min_length=1)]
+    content: Annotated[str, Field(min_length=1)]
+    tags: Annotated[str, Field(min_length=1)]
 
 
 class ReservationData(BaseModel):
-    type: ArticleReservationDate
-    date: str
-    time: str | None = None
+    type: ArticleReservationType
+    date: Annotated[str, Field(pattern=r'^\d{4}-\d{2}-\d{2}$')]
+    time: Annotated[str, Field(pattern=r'^\d{2}:\d{2}$')] | None = None
 
     @model_validator(mode='after')
     def check_date_not_past(self):
