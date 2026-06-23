@@ -14,7 +14,7 @@ from app.services.scraper.finance_news import FinanceNewsScrapService
 from app.services.tistory.post import TistoryPostService
 
 
-router = APIRouter(prefix="/tistory", tags=["tistory"])
+router = APIRouter()
 
 @router.get('/', response_model=BaseResponse[PostingResponse])
 def index() -> JSONResponse:
