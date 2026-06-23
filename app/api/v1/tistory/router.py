@@ -1,3 +1,4 @@
+from typing import Annotated
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
@@ -22,7 +23,7 @@ def index() -> JSONResponse:
 
 @router.get('/scrap/finance', response_model=BaseResponse[list[NewsArticle]])
 async def scarp(
-    finance_scraper: FinanceNewsScrapService = Depends(get_finance_news_scraper_service)
+    finance_scraper: Annotated[FinanceNewsScrapService, Depends(get_finance_news_scraper_service)]
 ) -> JSONResponse:
     response = await finance_scraper.do_scraping()
     return success_response({'articles': response})
@@ -31,7 +32,7 @@ async def scarp(
 @router.post('/summarize/finance', response_model=BaseResponse[list[SummarizedArticle]])
 async def summarize(
     payload: TistorySummarizeRequest,
-    finance_summarizer: NewsSummarizeService = Depends(get_news_summarize_service)
+    finance_summarizer: Annotated[NewsSummarizeService, Depends(get_news_summarize_service)]
 ) -> JSONResponse:
     summarized_articles = await finance_summarizer.summarize_many(payload.articles, FINANCE_NEWS_SYSTEM_PROMPT)
     return success_response({'summarized_articles': summarized_articles})
@@ -40,7 +41,7 @@ async def summarize(
 @router.post('/publish/finance')
 async def publish(
     payload: TistoryPublishRequest,
-    tistory_post_service: TistoryPostService = Depends(get_tistory_post_service)
+    tistory_post_service: Annotated[TistoryPostService, Depends(get_tistory_post_service)]
 ) -> JSONResponse:
     response = await tistory_post_service.do_posting(payload.blog_category, payload.summarized_articles, payload.reservation_data)
     return success_response(response)

@@ -38,8 +38,8 @@ class NewsSummarizeService:
 
     async def summarize_many(self, articles: list[NewsArticle], system_prompt: str) -> list[SummarizedArticle]:
         # * 순차 실행 (동시 호출 시 분당 토큰 제한(TPM)에 걸려서 하나씩 처리)
-        # tasks = [self.summarize_one(item.article) for item in articles]
-        # summarized_articles = await asyncio.gather(*tasks)
+        """ tasks = [self.summarize_one(item.article) for item in articles]
+        summarized_articles = await asyncio.gather(*tasks) """
 
         summarized_articles = []
         for item in articles:

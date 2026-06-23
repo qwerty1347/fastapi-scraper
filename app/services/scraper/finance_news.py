@@ -11,6 +11,7 @@ from app.services.scraper.base import BaseScraperService
 
 FINANCE_NEWS_URL = 'https://finance.naver.com/news/news_list.naver?mode=RANK'
 
+
 class FinanceNewsScrapService(BaseScraperService):
     """
     * 스크래핑
