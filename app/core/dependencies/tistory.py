@@ -1,6 +1,7 @@
 from app.modules.browser.playwright import PlaywrightManager
 from app.modules.llm.groq import create_async_groq_client
 from app.services.llm.news_summarize import NewsSummarizeService
+from app.services.scraper.entertain_news import EntNewsScrapService
 from app.services.scraper.finance_news import FinanceNewsScrapService
 from app.services.tistory.post import TistoryPostService
 
@@ -15,3 +16,7 @@ def get_news_summarize_service() -> NewsSummarizeService:
 
 def get_tistory_post_service() -> TistoryPostService:
     return TistoryPostService(PlaywrightManager(headless=True))
+
+
+def get_entertain_news_scraper_service() -> EntNewsScrapService:
+    return EntNewsScrapService(PlaywrightManager(headless=True))

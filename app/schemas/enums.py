@@ -2,11 +2,11 @@ from enum import Enum
 
 
 class BlogCategory(str, Enum):
-    entertain: str = "entertain"
-    finance: str = "finance"
-    coding: str = "coding"
+    entertain = "entertain"
+    finance = "finance"
+    coding = "coding"
 
 
-class ArticleReservationDate(str, Enum):
-    fix: str = "fix"
-    random: str = "random"
+class ArticleReservationType(str, Enum):
+    fix = "fix"
+    random = "random"
