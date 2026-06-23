@@ -1,11 +1,10 @@
 from datetime import datetime as dt
-
 from pydantic import BaseModel, model_validator
 
 from app.schemas.enums import ArticleReservationDate
 
 
-class FinanceArticle(BaseModel):
+class NewsArticle(BaseModel):
     article: str
 
 
