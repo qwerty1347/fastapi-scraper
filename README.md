@@ -31,7 +31,8 @@ FastAPI 기반 금융 뉴스 큐레이션 자동 포스팅 서비스. 네이버 
 | **마크다운 모드 자동 전환** | 티스토리 에디터의 기본 모드 → 마크다운 모드 변경 confirm 자동 처리. CodeMirror JS API(`setValue` + change 이벤트 디스패치)로 본문 즉시 입력 |
 | **다이얼로그 자동 분기 처리** | "임시 글 복원" / "모드 전환" 같은 confirm을 메시지 기반으로 자동 dismiss/accept |
 | **노트북 친화 비동기** | Windows + Jupyter 환경에서 Playwright(`ProactorEventLoop` 요구)를 별도 백그라운드 루프로 실행시키는 `run_async` 헬퍼 제공 |
-| **버전 라우팅** | `app/api/`에서 라우터를 `pkgutil`로 자동 수집해 `/api/v1/...`로 등록 |
+| **라우터 자동 수집** | `collect_routers`(`app/core/utils/router.py`)가 각 패키지 하위의 `router.py`를 자동 등록. 폴더만 추가하면 `/api/v1/tistory/<도메인>/...`로 자동 라우팅 (버전·도메인 모두 확장) |
+| **도메인 분리** | tistory 아래 `finance` / `entertain` 도메인을 폴더로 분리. 각 도메인이 scrap·summarize·publish·run 엔드포인트를 독립 제공 |
 | **전역 logger + 파일 로그** | `app/core/logger.py`의 단일 logger와 `app/core/utils/log.py`의 일자별 카테고리 파일 로깅 분리 |
 
 ---
@@ -46,7 +47,7 @@ FastAPI 기반 금융 뉴스 큐레이션 자동 포스팅 서비스. 네이버 
 ```
 [Client/Notebook]   [FastAPI]   [Scraper]    [LLM]       [Tistory]
        │                │           │           │             │
-       │ POST /scraper/ │           │           │             │
+       │ POST .../scrap │           │           │             │
        ├───────────────►│           │           │             │
        │                │           │           │             │
        │                │ scrape()  │           │             │
@@ -148,17 +149,23 @@ FastAPI 기반 금융 뉴스 큐레이션 자동 포스팅 서비스. 네이버 
 fastapi-tistory/
 ├── app/
 │   ├── api/
-│   │   ├── __init__.py                     # /api 루트 + pkgutil 자동 수집
+│   │   ├── __init__.py                     # /api 루트 + collect_routers 자동 수집 (모든 버전)
 │   │   └── v1/
 │   │       ├── __init__.py                 # /v1 + 하위 라우터 자동 등록
 │   │       └── tistory/
-│   │           ├── __init__.py
-│   │           └── router.py               # /api/v1/scraper/...
+│   │           ├── __init__.py             # /tistory + 하위(finance/entertain) 자동 수집
+│   │           ├── router.py               # tistory 직속 라우트
+│   │           ├── finance/
+│   │           │   ├── __init__.py         # /finance
+│   │           │   └── router.py           # 금융 스크랩/요약/발행/run
+│   │           └── entertain/
+│   │               ├── __init__.py         # /entertain
+│   │               └── router.py           # 연예 스크랩/요약/발행/run
 │   ├── core/
 │   │   ├── config.py                       # pydantic-settings, BASE_DIR, STORAGE_PATH, TISTORY_STORAGE
 │   │   ├── logger.py                       # 전역 logger + setup_logging
 │   │   ├── dependencies/
-│   │   │   └── tistory.py
+│   │   │   └── tistory.py                  # 스크래퍼(finance/entertain)·요약·포스트 서비스 DI
 │   │   ├── exceptions/
 │   │   │   ├── custom.py                   # 비즈니스 예외
 │   │   │   └── handlers.py                 # 글로벌 예외 핸들러 등록
@@ -167,7 +174,8 @@ fastapi-tistory/
 │   │       ├── file.py                     # ensure_directory
 │   │       ├── log.py                      # save_log (일자별 파일 로그)
 │   │       ├── notebook.py                 # run_async (백그라운드 Proactor 루프)
-│   │       └── response.py                 # 성공/오류 응답 헬퍼
+│   │       ├── response.py                 # 성공/오류 응답 헬퍼
+│   │       └── router.py                   # collect_routers (라우터 자동 수집 헬퍼)
 │   ├── modules/
 │   │   ├── browser/
 │   │   │   └── playwright.py               # PlaywrightManager (start/close/create_context)
@@ -175,18 +183,26 @@ fastapi-tistory/
 │   │       ├── groq.py                     # create_async_groq_client
 │   │       └── config.py                   # LLMConfig (모델별 파라미터)
 │   ├── prompts/
-│   │   └── finance_news.py                 # FINANCE_NEWS_SYSTEM_PROMPT
+│   │   ├── finance_news.py                 # FINANCE_NEWS_SYSTEM_PROMPT
+│   │   └── entertain_news.py               # ENTERTAIN_NEWS_SYSTEM_PROMPT
 │   ├── schemas/
-│   │   └── common.py                       # BaseResponse 제네릭
+│   │   ├── base.py                         # BaseResponse 제네릭
+│   │   ├── enums.py                        # BlogCategory, 예약 방식 Enum 등
+│   │   └── tistory/
+│   │       ├── article.py                  # NewsArticle, SummarizedArticle, ReservationData
+│   │       ├── request.py                  # TistorySummarizeRequest, TistoryPublishRequest
+│   │       └── response.py                 # PostingResponse 등
 │   ├── services/
 │   │   ├── scraper/
-│   │   │   └── finance_news.py             # FinanceNewsScrapService
+│   │   │   ├── base.py                     # ScraperBase (스크래퍼 공통 베이스)
+│   │   │   ├── finance_news.py             # FinanceNewsScrapService
+│   │   │   └── entertain_news.py           # EntNewsScrapService
 │   │   ├── llm/
 │   │   │   └── news_summarize.py           # NewsSummarizeService (summarize_one/many)
 │   │   └── tistory/
 │   │       ├── login.py                    # TistoryLoginService (카카오 OAuth → storage_state 저장)
-│   │       ├── post.py
-│   │       └── news_post.py                # TistoryPostService (글쓰기/발행 전체)
+│   │       ├── post.py                     # TistoryPostService (글쓰기/발행 전체)
+│   │       └── sample_post.py
 │   └── main.py                             # FastAPI 진입점
 ├── notebooks/
 │   ├── test.ipynb
@@ -228,19 +244,32 @@ fastapi-tistory/
 
 ### 엔드포인트 목록
 
+**금융(finance)**
+
 | Method | Path | 설명 | 요청 바디 |
 |---|---|---|---|
-| `GET` | `/api/v1/tistory/` | 헬스체크 | — |
-| `GET` | `/api/v1/tistory/scrap/finance` | 네이버 금융 랭킹 뉴스 스크래핑 | — |
-| `POST` | `/api/v1/tistory/summarize/finance` | 스크랩된 기사들을 LLM으로 요약 | `TistorySummarizeRequest` |
-| `POST` | `/api/v1/tistory/publish/finance` | 요약 결과를 티스토리에 발행 | `TistoryPublishRequest` |
-| `POST` | `/api/v1/tistory/run` | 스크래핑 → 요약 → 발행 전체 파이프라인 (예정) | — |
+| `GET` | `/api/v1/tistory/finance/` | 헬스체크 | — |
+| `GET` | `/api/v1/tistory/finance/scrap` | 금융 랭킹 뉴스 스크래핑 | — |
+| `POST` | `/api/v1/tistory/finance/summarize` | 스크랩된 기사들을 LLM으로 요약 | `TistorySummarizeRequest` |
+| `POST` | `/api/v1/tistory/finance/publish` | 요약 결과를 티스토리에 발행 | `TistoryPublishRequest` |
+| `POST` | `/api/v1/tistory/finance/run` | scrap → summarize → publish 전체 (예정) | — |
+
+**연예(entertain)** — 경로의 `finance` 만 `entertain` 으로 바뀐 동일 구조 (프롬프트만 연예용)
+
+| Method | Path | 설명 | 요청 바디 |
+|---|---|---|---|
+| `GET` | `/api/v1/tistory/entertain/` | 헬스체크 | — |
+| `GET` | `/api/v1/tistory/entertain/scrap` | 연예 랭킹 뉴스 스크래핑 | — |
+| `POST` | `/api/v1/tistory/entertain/summarize` | 스크랩된 기사들을 LLM으로 요약 | `TistorySummarizeRequest` |
+| `POST` | `/api/v1/tistory/entertain/publish` | 요약 결과를 티스토리에 발행 | `TistoryPublishRequest` |
+| `POST` | `/api/v1/tistory/entertain/run` | scrap → summarize → publish 전체 (예정) | — |
 
 > 파이프라인은 보통 **scrap → summarize → publish** 순으로 호출합니다. `run` 은 이 3단계를 한 번에 묶는 엔드포인트입니다.
+> 아래 상세는 `finance` 기준이며, `entertain` 도 본문 스키마는 동일하고 사용 프롬프트(연예 vs 금융)만 다릅니다.
 
 ---
 
-#### `GET /api/v1/tistory/scrap/finance`
+#### `GET /api/v1/tistory/finance/scrap`
 
 지정한 뉴스 기사의 랜덤으로 본문을 스크래핑합니다.
 
@@ -259,7 +288,7 @@ fastapi-tistory/
 
 ---
 
-#### `POST /api/v1/tistory/summarize/finance`
+#### `POST /api/v1/tistory/finance/summarize`
 
 스크랩한 기사들을 LLM으로 요약해 제목·본문(마크다운)·태그로 가공합니다.
 
@@ -291,13 +320,14 @@ fastapi-tistory/
 
 ---
 
-#### `POST /api/v1/tistory/publish/finance`
+#### `POST /api/v1/tistory/finance/publish`
 
 요약 결과를 티스토리 블로그에 발행합니다. `reservation_data` 로 예약 발행을 지정할 수 있습니다.
 
 **요청** (`TistoryPublishRequest`):
 ```json
 {
+  "blog_category": "finance",
   "summarized_articles": [
     {
       "title": "30자 이내 제목",
@@ -317,6 +347,7 @@ fastapi-tistory/
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
+| `blog_category` | `"finance" \| "entertain" \| ...` | 발행 대상 블로그 카테고리 (`BlogCategory`) |
 | `summarized_articles` | `SummarizedArticle[]` | 발행할 글 목록 (`title`, `content`, `tags`) |
 | `reservation_data` | `object \| null` | 예약 정보. `null` 이면 **즉시(현재) 발행** |
 | `reservation_data.type` | `"fix" \| "random"` | 예약 방식 (고정 / 랜덤) |
@@ -372,6 +403,8 @@ fastapi-tistory/
 ```python
 [{'article': '본문 텍스트...'}, {'article': '...'}]
 ```
+
+> 연예 도메인은 `EntNewsScrapService`(`app/services/scraper/entertain_news.py`)가 연예 랭킹에서 동일한 방식으로 수집합니다. 두 스크래퍼는 `ScraperBase`(`app/services/scraper/base.py`)를 상속해 페이지 오픈·세션 관리 등 공통 로직을 공유합니다.
 
 ### 2) LLM 요약 (`NewsSummarizeService`)
 
@@ -527,7 +560,7 @@ storage/logs/
 
 1. **LLM 재시도 로직**: `summarize_one` 에 `RateLimitError` / `json.JSONDecodeError` 캐치 후 백오프 재시도
 2. **결과 영속화**: 발행 결과(`title`, `url`, `tags`, 발행일시)를 MySQL/MongoDB에 저장 → 중복 발행 방지·통계
-3. **비동기 큐 도입**: `POST /scraper/run` 을 즉시 응답 + worker 가 백그라운드에서 처리하는 패턴으로 전환 (Redis 큐)
+3. **비동기 큐 도입**: `POST /api/v1/tistory/finance/run` 을 즉시 응답 + worker 가 백그라운드에서 처리하는 패턴으로 전환 (Redis 큐)
 4. **이미지 후처리**: LLM 본문 안에 placeholder 삽입 → 별도 단계에서 실제 이미지 검색·업로드·치환
 5. **테스트**: Playwright 부분은 mocking, LLM 부분은 fixture, Tistory 부분은 storage_state mocking
 6. **세션 만료 감지**: 자동 로그인 실패 시 알림 → 재로그인 안내
