@@ -33,7 +33,7 @@ class FinanceNewsScrapService(BaseScraperService):
 
     async def scrap_news_list(self) -> list[Locator]:
         newslist = await self.page.locator("div.hotNewsList ul.simpleNewsList > li").all()
-        picked_newslist = random.sample(newslist, k=2)
+        picked_newslist = random.sample(newslist, k=4)
         return picked_newslist
 
 
